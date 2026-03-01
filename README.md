@@ -2,43 +2,30 @@
 SpotHole AI is a real-time, browser-based computer vision application designed to detect road hazards (potholes) and calculate the safest driving routes. By combining TensorFlow.js for AI inference and Leaflet.js for geospatial mapping, the system allows users to contribute to a live hazard database and navigate around dangerous road segments.
 
 ## 🚀 Key Features
-Real-Time AI Detection: Utilizes a custom-trained Teachable Machine model (via TensorFlow.js) to identify potholes with a 98% confidence threshold.
-
-Smart Routing Engine: Integrates with the OSRM (Open Source Routing Machine) API to compare alternative routes and automatically select the path with the fewest recorded hazards.
-
-Interactive Mapping: Built with Leaflet.js featuring custom markers, smooth "My Location" GPS tracking, and interactive "Risk Scanners" on hover.
-
-Persistent Data Storage: Saves logged hazards to the browser's LocalStorage, ensuring your data remains available across sessions without a backend database.
-
-Optimized Performance: Features a "Lag-Killer" logic (low-resolution processing and tf.tidy() memory management) to ensure smooth map movement during AI monitoring.
+- Real-Time AI Detection: Utilizes a custom-trained Teachable Machine model (via TensorFlow.js) to identify potholes with a 98% confidence threshold.
+- Smart Routing Engine: Integrates with the OSRM (Open Source Routing Machine) API to compare alternative routes and automatically select the path with the fewest recorded hazards.
+- Interactive Mapping: Built with Leaflet.js featuring custom markers, smooth "My Location" GPS tracking, and interactive "Risk Scanners" on hover.
+- Persistent Data Storage: Saves logged hazards to the browser's LocalStorage, ensuring your data remains available across sessions without a backend database.
+- Optimized Performance: Features a "Lag-Killer" logic (low-resolution processing and tf.tidy() memory management) to ensure smooth map movement during AI monitoring.
 
 ## 🛠️ Tech Stack
-Frontend: HTML5, CSS3 (Modern Dark UI)
-
-Maps: Leaflet.js & OpenStreetMap
-
-AI/ML: TensorFlow.js & Teachable Machine
-
-Routing: OSRM API
-
-Geocoding: Nominatim (OSM)
+- Frontend: HTML5, CSS3 (Modern Dark UI)
+- Maps: Leaflet.js & OpenStreetMap
+- AI/ML: TensorFlow.js & Teachable Machine
+- Routing: OSRM API
+- Geocoding: Nominatim (OSM)
 
 ## 📦 Installation & Setup
-Clone the Repository:
-
+- Clone the Repository:
 Bash
 git clone https://github.com/YOUR_USERNAME/spothole-ai.git
 cd spothole-ai
-Model Configuration:
+- Model Configuration:
 Ensure your exported Teachable Machine files are placed in the /model directory:
-
 model.json
-
 metadata.json
-
 weights.bin
-
-Run Locally:
+- Run Locally:
 Open index.html using a local server (e.g., VS Code Live Server).
 Note: Camera and GPS features require an https:// connection or localhost to function.
 
@@ -50,13 +37,10 @@ Note: Camera and GPS features require an https:// connection or localhost to fun
 
 
 ## 🖥️ How It Works
-Monitor: Mount your device on a vehicle dashboard and start the camera.
-
-Detect: The AI scans the road. If a pothole is detected for 2 consecutive frames at >98% confidence, it is logged.
-
-Analyze: The "Risk Score" and "Accident Probability" update dynamically based on the local dataset.
-
-Navigate: Enter your destination. The system will analyze three possible routes and highlight the one that avoids the most potholes in Green.
+- Monitor: Mount your device on a vehicle dashboard and start the camera.
+- Detect: The AI scans the road. If a pothole is detected for 2 consecutive frames at >98% confidence, it is logged.
+- Analyze: The "Risk Score" and "Accident Probability" update dynamically based on the local dataset.
+- Navigate: Enter your destination. The system will analyze three possible routes and highlight the one that avoids the most potholes in Green.
 
 ## 🤝 Contributing
 Contributions are welcome! Whether it's improving the AI model's accuracy or adding a dark mode for the map, feel free to fork the repo and submit a Pull Request.
