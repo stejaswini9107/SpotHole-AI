@@ -23,7 +23,7 @@ async function init() {
     
     if (typeof tmImage !== "undefined") {
         try {
-            const modelURL = "./model/"; 
+            const modelURL = "./"; 
             model = await tmImage.load(modelURL + "model.json", modelURL + "metadata.json");
             
             document.getElementById("system-status").innerText = "System: ONLINE";
@@ -212,3 +212,4 @@ function clearDatabase() {
         location.reload();
     }
 }
+
