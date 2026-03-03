@@ -115,39 +115,67 @@ function selectLocation(lat, lon, name, inputId, suggestionId, type) {
 
 async function drawRoute() {
     if (!originMarker || !destinationMarker) return alert("Select start and end points!");
+    
     const start = originMarker.getLatLng();
     const end = destinationMarker.getLatLng();
-    const url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson&alternatives=true`;
+    const url = `https://router.project-osrm.org/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson&alternatives=true`;
 
-    const res = await fetch(url);
-    const data = await res.json();
-    if (!data.routes || data.routes.length === 0) return alert("No route found!");
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (!data.routes || data.routes.length === 0) return alert("No route found!");
 
-    const snapshot = await db.collection("potholes").get();
-    const allPotholes = [];
-    snapshot.forEach(doc => allPotholes.push(doc.data()));
+        const snapshot = await db.collection("potholes").get();
+        const allPotholes = [];
+        snapshot.forEach(doc => allPotholes.push(doc.data()));
 
-    let bestIdx = 0;
-    let minPotCount = Infinity;
+        let bestIdx = 0;
+        let minPotCount = Infinity;
 
-    data.routes.forEach((r, idx) => {
-        let count = 0;
-        const path = r.geometry.coordinates;
-        allPotholes.forEach(p => {
-            const isNear = path.some(c => map.distance([p.lat, p.lng], [c[1], c[0]]) < 35);
-            if (isNear) count++;
+        data.routes.forEach((r, idx) => {
+            let count = 0;
+            const path = r.geometry.coordinates;
+            allPotholes.forEach(p => {
+                const isNear = path.some(c => map.distance([p.lat, p.lng], [c[1], c[0]]) < 35);
+                if (isNear) count++;
+            });
+            if (count < minPotCount) {
+                minPotCount = count;
+                bestIdx = idx;
+            }
         });
-        if (count < minPotCount) { minPotCount = count; bestIdx = idx; }
-    });
 
-    if (routeLine) map.removeLayer(routeLine);
-    const best = data.routes[bestIdx];
-    const color = minPotCount === 0 ? '#00ff88' : '#4285F4';
-    routeLine = L.geoJSON(best.geometry, { style: { color: color, weight: 8, opacity: 0.8 } }).addTo(map);
-    map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
-    alert(`Smart Route Selected: ${minPotCount} potholes detected on this path.`);
+        if (routeLine) map.removeLayer(routeLine);
+
+        const best = data.routes[bestIdx];
+        let routeColor = '#00ff88'; 
+        if (minPotCount > 0 && minPotCount < 4) routeColor = '#00f2ff'; 
+        if (minPotCount >= 4) routeColor = '#ff4b2b'; 
+
+        routeLine = L.featureGroup().addTo(map);
+
+        L.geoJSON(best.geometry, {
+            style: { color: routeColor, weight: 12, opacity: 0.2, lineCap: 'round' }
+        }).addTo(routeLine);
+
+        L.geoJSON(best.geometry, {
+            style: { color: routeColor, weight: 6, opacity: 1, lineCap: 'round' }
+        }).addTo(routeLine);
+
+        map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+
+        document.getElementById("potholeHits").innerText = minPotCount;
+        const risk = Math.min(minPotCount * 20, 100);
+        document.getElementById("riskScore").innerText = risk + "%";
+        document.getElementById("riskBar").style.width = risk + "%";
+        document.getElementById("system-status").innerText = "Route Optimized";
+
+    } catch (error) {
+        console.error(error);
+        alert("Routing Service Error");
+    }
 }
-
 async function startCamera() {
     if (isMonitoring) return;
     const video = document.getElementById("camera");
@@ -158,33 +186,51 @@ async function startCamera() {
         video.srcObject = stream;
         isMonitoring = true;
         document.getElementById("monitorBtn").innerText = "STOP AI";
-        setInterval(runLowResAI, 1500); // Slower interval to prevent RAM lag
+        setInterval(runLowResAI, 1500); 
     } catch (e) { alert("Camera Access Required."); }
 }
 
 async function runLowResAI() {
     if (!isMonitoring || !model) return;
     const video = document.getElementById("camera");
-    if (video.readyState !== 4) return;
-
-    const prediction = await tf.tidy(() => model.predict(video));
-    let top = prediction.reduce((a, b) => a.probability > b.probability ? a : b);
+    
+    const predictions = await model.predict(video);
+    
+    let top = predictions.reduce((a, b) => a.probability > b.probability ? a : b);
 
     const surface = document.getElementById("currentSurface");
-    document.getElementById("confidenceValue").innerText = (top.probability * 100).toFixed(0) + "%";
+    const confDisplay = document.getElementById("confidenceValue");
+    const dot = document.querySelector(".dot");
 
-    if (top.probability > 0.98 && top.className.toLowerCase().includes("pothole")) {
-        detectionCounter++;
-        if (detectionCounter >= 3) { 
+    confDisplay.innerText = (top.probability * 100).toFixed(0) + "%";
+
+    if (top.probability > 0.85) {
+        const label = top.className.toLowerCase();
+        
+        if (label.includes("pothole")) {
             surface.innerText = "POTHOLE DETECTED!";
-            surface.style.color = "#ff4b2b";
-            markPotholeOnCloud();
+            surface.style.color = "var(--warning-red)";
+            dot.style.background = "var(--warning-red)";
+            document.querySelector(".video-container").style.boxShadow = "0 0 20px rgba(255, 75, 43, 0.6)";
+            
+            detectionCounter++;
+            if (detectionCounter >= 2) { 
+                markPotholeOnCloud();
+                detectionCounter = 0;
+            }
+        } 
+        else if (label.includes("crack")) {
+            surface.innerText = "CRACK DETECTED";
+            surface.style.color = "#ff8800";
+            dot.style.background = "#ff8800";
+        }
+        else {
+            surface.innerText = "ROAD CLEAR";
+            surface.style.color = "var(--safe-green)";
+            dot.style.background = "var(--safe-green)";
+            document.querySelector(".video-container").style.boxShadow = "none";
             detectionCounter = 0;
         }
-    } else {
-        detectionCounter = 0;
-        surface.innerText = "ROAD CLEAR";
-        surface.style.color = "#00ff88";
     }
 }
 
@@ -193,7 +239,6 @@ function markPotholeOnCloud() {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         
-        // Sync to Firebase Cloud
         db.collection("potholes").add({
             lat: lat,
             lng: lng,
@@ -223,3 +268,4 @@ function clearDatabase() {
         });
     }
 }
+
