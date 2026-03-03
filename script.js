@@ -158,7 +158,7 @@ async function startCamera() {
         video.srcObject = stream;
         isMonitoring = true;
         document.getElementById("monitorBtn").innerText = "STOP AI";
-        setInterval(runLowResAI, 1500); // Slower interval to prevent RAM lag
+        setInterval(runLowResAI, 1500); 
     } catch (e) { alert("Camera Access Required."); }
 }
 
@@ -193,7 +193,6 @@ function markPotholeOnCloud() {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         
-        // Sync to Firebase Cloud
         db.collection("potholes").add({
             lat: lat,
             lng: lng,
@@ -223,3 +222,4 @@ function clearDatabase() {
         });
     }
 }
+
