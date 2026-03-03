@@ -139,12 +139,12 @@ async function startCamera() {
     const video = document.getElementById("camera");
     try {
         stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "environment", width: 640, height: 480 } 
+            video: { facingMode: "environment", width: 320, height: 240 } 
         });
         video.srcObject = stream;
         isMonitoring = true;
         document.getElementById("monitorBtn").innerText = "STOP AI";
-        setInterval(runLowResAI, 700); 
+        setInterval(runLowResAI, 1500); 
     } catch (e) { 
         alert("Camera Access Required. Please use HTTPS."); 
     }
@@ -211,5 +211,6 @@ function clearDatabase() {
         location.reload();
     }
 }
+
 
 
