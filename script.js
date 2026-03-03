@@ -1,4 +1,3 @@
-var exports = {}; 
 let map, model, stream;
 let isMonitoring = false;
 let potholeDatabase = [];
@@ -21,18 +20,21 @@ async function init() {
     }
     
     updateAnalytics(); 
-
+    
     if (typeof tmImage !== "undefined") {
         try {
-            const modelURL = "model/"; // Fixed path for GitHub Pages
+            const modelURL = "./model/"; 
             model = await tmImage.load(modelURL + "model.json", modelURL + "metadata.json");
-            document.getElementById("system-status").innerText = "AI: ONLINE";
+            
+            document.getElementById("system-status").innerText = "System: ONLINE";
             document.querySelector(".dot").style.background = "#00ff88";
             document.querySelector(".dot").style.boxShadow = "0 0 10px #00ff88";
         } catch (e) { 
-            document.getElementById("system-status").innerText = "AI: ERROR"; 
-            console.error(e);
+            console.error("AI Loading Failed:", e);
+            document.getElementById("system-status").innerText = "System: AI ERROR"; 
         }
+    } else {
+        document.getElementById("system-status").innerText = "System: LIB MISSING";
     }
 
     setupAutocomplete("originInput", "originSuggestions", "origin");
@@ -111,6 +113,8 @@ function drawRoute() {
     fetch(url).then(res => res.json()).then(data => {
         if (routeLine) map.removeLayer(routeLine);
         let routes = data.routes;
+        if (!routes || routes.length === 0) return alert("No route found!");
+        
         let bestIdx = 0;
         let minPot = Infinity;
 
@@ -133,16 +137,18 @@ function drawRoute() {
 
 async function startCamera() {
     if (isMonitoring) return;
+    const video = document.getElementById("camera");
     try {
-        const video = document.getElementById("camera");
         stream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: "environment", width: 640, height: 480 } 
         });
         video.srcObject = stream;
         isMonitoring = true;
-        document.getElementById("monitorBtn").innerText = "MONITORING...";
+        document.getElementById("monitorBtn").innerText = "STOP AI";
         setInterval(runLowResAI, 700); 
-    } catch (e) { alert("Camera Access Required"); }
+    } catch (e) { 
+        alert("Camera Access Required. Please use HTTPS."); 
+    }
 }
 
 async function runLowResAI() {
@@ -193,8 +199,11 @@ function updateAnalytics() {
     document.getElementById("potholeHits").innerText = hits;
     document.getElementById("riskScore").innerText = risk + "%";
     document.getElementById("accidentScore").innerText = accident + "%";
-    document.getElementById("riskBar").style.width = risk + "%";
-    document.getElementById("accidentBar").style.width = accident + "%";
+    
+    const rBar = document.getElementById("riskBar");
+    const aBar = document.getElementById("accidentBar");
+    if(rBar) rBar.style.width = risk + "%";
+    if(aBar) aBar.style.width = accident + "%";
 }
 
 function clearDatabase() {
