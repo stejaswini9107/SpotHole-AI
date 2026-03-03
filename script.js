@@ -25,7 +25,6 @@ async function init() {
         try {
             const modelURL = "./"; 
             model = await tmImage.load(modelURL + "model.json", modelURL + "metadata.json");
-            
             document.getElementById("system-status").innerText = "System: ONLINE";
             document.querySelector(".dot").style.background = "#00ff88";
             document.querySelector(".dot").style.boxShadow = "0 0 10px #00ff88";
@@ -212,4 +211,5 @@ function clearDatabase() {
         location.reload();
     }
 }
+
 
