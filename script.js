@@ -193,44 +193,31 @@ async function startCamera() {
 async function runLowResAI() {
     if (!isMonitoring || !model) return;
     const video = document.getElementById("camera");
-    
+    if (video.readyState !== 4) return;
+
     const predictions = await model.predict(video);
-    
     let top = predictions.reduce((a, b) => a.probability > b.probability ? a : b);
 
     const surface = document.getElementById("currentSurface");
     const confDisplay = document.getElementById("confidenceValue");
-    const dot = document.querySelector(".dot");
-
     confDisplay.innerText = (top.probability * 100).toFixed(0) + "%";
 
-    if (top.probability > 0.85) {
-        const label = top.className.toLowerCase();
-        
-        if (label.includes("pothole")) {
+    if (top.probability > 0.85 && top.className.toLowerCase().includes("pothole")) {
+        detectionCounter++;
+        if (detectionCounter >= 2) { 
             surface.innerText = "POTHOLE DETECTED!";
-            surface.style.color = "var(--warning-red)";
-            dot.style.background = "var(--warning-red)";
-            document.querySelector(".video-container").style.boxShadow = "0 0 20px rgba(255, 75, 43, 0.6)";
-            
-            detectionCounter++;
-            if (detectionCounter >= 2) { 
-                markPotholeOnCloud();
-                detectionCounter = 0;
-            }
-        } 
-        else if (label.includes("crack")) {
-            surface.innerText = "CRACK DETECTED";
-            surface.style.color = "#ff8800";
-            dot.style.background = "#ff8800";
-        }
-        else {
-            surface.innerText = "ROAD CLEAR";
-            surface.style.color = "var(--safe-green)";
-            dot.style.background = "var(--safe-green)";
-            document.querySelector(".video-container").style.boxShadow = "none";
+            surface.style.color = "#ff4b2b";
+            markPotholeOnCloud();
             detectionCounter = 0;
         }
+    } else if (top.probability > 0.85 && top.className.toLowerCase().includes("crack")) {
+        surface.innerText = "CRACK DETECTED";
+        surface.style.color = "#ff8800";
+        detectionCounter = 0;
+    } else {
+        detectionCounter = 0;
+        surface.innerText = "ROAD CLEAR";
+        surface.style.color = "#00ff88";
     }
 }
 
@@ -268,4 +255,5 @@ function clearDatabase() {
         });
     }
 }
+
 
