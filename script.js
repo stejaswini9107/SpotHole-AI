@@ -5,7 +5,7 @@ let potholeDatabase = [];
 let potholeLayer;
 let originMarker, destinationMarker, routeLine;
 let detectionCounter = 0; 
-let watchId = null; 
+let watchId = null;
 
 async function init() {
     map = L.map('map', { zoomControl: false, preferCanvas: true }).setView([13.0827, 80.2707], 15);
@@ -24,18 +24,22 @@ async function init() {
 
     if (typeof tmImage !== "undefined") {
         try {
-            const modelURL = "./model/"; 
+            const modelURL = "model/"; // Fixed path for GitHub Pages
             model = await tmImage.load(modelURL + "model.json", modelURL + "metadata.json");
             document.getElementById("system-status").innerText = "AI: ONLINE";
             document.querySelector(".dot").style.background = "#00ff88";
-        } catch (e) { document.getElementById("system-status").innerText = "AI: ERROR"; }
+            document.querySelector(".dot").style.boxShadow = "0 0 10px #00ff88";
+        } catch (e) { 
+            document.getElementById("system-status").innerText = "AI: ERROR"; 
+            console.error(e);
+        }
     }
 
     setupAutocomplete("originInput", "originSuggestions", "origin");
     setupAutocomplete("destinationInput", "destinationSuggestions", "destination");
 
     document.addEventListener("click", (e) => {
-        if (!e.target.closest(".search-box")) {
+        if (!e.target.closest(".search-container")) {
             document.getElementById("originSuggestions").style.display = "none";
             document.getElementById("destinationSuggestions").style.display = "none";
         }
@@ -46,22 +50,22 @@ window.onload = init;
 
 function useMyLocation() {
     if (!navigator.geolocation) return alert("GPS not available");
-
     if (watchId) navigator.geolocation.clearWatch(watchId);
+
+    const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
     watchId = navigator.geolocation.watchPosition(pos => {
         const coords = [pos.coords.latitude, pos.coords.longitude];
-
         if (originMarker) {
             originMarker.setLatLng(coords);
         } else {
             originMarker = L.marker(coords).addTo(map).bindPopup("Live Location").openPopup();
         }
-
         map.panTo(coords);
         document.getElementById("originInput").value = "Live GPS Active";
-    }, err => alert("GPS Error: " + err.message), 
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
+    }, err => {
+        console.warn("GPS Error: ", err);
+    }, options);
 }
 
 function setupAutocomplete(inputId, suggestionId, type) {
@@ -69,15 +73,17 @@ function setupAutocomplete(inputId, suggestionId, type) {
     const box = document.getElementById(suggestionId);
     input.addEventListener('input', async () => {
         if (input.value.length < 3) { box.style.display = "none"; return; }
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${input.value}&limit=5`);
-        const data = await res.json();
-        box.innerHTML = data.map(p => `
-            <div class="suggestion-item" style="padding:12px; cursor:pointer; background:#1a1a1a; border-bottom:1px solid #333;"
-                 onclick="selectLocation('${p.lat}','${p.lon}','${p.display_name.split(',')[0]}','${inputId}','${suggestionId}','${type}')">
-                ${p.display_name}
-            </div>
-        `).join('');
-        box.style.display = "block";
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${input.value}&limit=5`);
+            const data = await res.json();
+            box.innerHTML = data.map(p => `
+                <div class="suggestion-item" 
+                     onclick="selectLocation('${p.lat}','${p.lon}','${p.display_name.split(',')[0]}','${inputId}','${suggestionId}','${type}')">
+                    ${p.display_name}
+                </div>
+            `).join('');
+            box.style.display = "block";
+        } catch (e) { console.error("Search error", e); }
     });
 }
 
@@ -97,7 +103,7 @@ function selectLocation(lat, lon, name, inputId, suggestionId, type) {
 }
 
 function drawRoute() {
-    if (!originMarker || !destinationMarker) return alert("Set Start & End locations!");
+    if (!originMarker || !destinationMarker) return alert("Select start and end points!");
     const start = originMarker.getLatLng();
     const end = destinationMarker.getLatLng();
     const url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson&alternatives=true`;
@@ -112,7 +118,7 @@ function drawRoute() {
             let count = 0;
             const path = r.geometry.coordinates;
             potholeDatabase.forEach(p => {
-                const isNear = path.some(c => L.latLng(p[0], p[1]).distanceTo(L.latLng(c[1], c[0])) < 30);
+                const isNear = path.some(c => L.latLng(p[0], p[1]).distanceTo(L.latLng(c[1], c[0])) < 35);
                 if (isNear) count++;
             });
             if (count < minPot) { minPot = count; bestIdx = idx; }
@@ -120,7 +126,7 @@ function drawRoute() {
 
         const best = routes[bestIdx];
         const color = minPot === 0 ? '#00ff88' : '#4285F4';
-        routeLine = L.geoJSON(best.geometry, { style: { color: color, weight: 8, opacity: 0.8 } }).addTo(map);
+        routeLine = L.geoJSON(best.geometry, { style: { color: color, weight: 7, opacity: 0.8 } }).addTo(map);
         map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
     });
 }
@@ -130,17 +136,13 @@ async function startCamera() {
     try {
         const video = document.getElementById("camera");
         stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                facingMode: "environment", 
-                width: { ideal: 640 }, 
-                height: { ideal: 480 } 
-            } 
+            video: { facingMode: "environment", width: 640, height: 480 } 
         });
         video.srcObject = stream;
         isMonitoring = true;
-        document.getElementById("monitorBtn").innerText = "AI ACTIVE";
-        setInterval(runLowResAI, 600); 
-    } catch (e) { alert("Enable Camera Permissions"); }
+        document.getElementById("monitorBtn").innerText = "MONITORING...";
+        setInterval(runLowResAI, 700); 
+    } catch (e) { alert("Camera Access Required"); }
 }
 
 async function runLowResAI() {
@@ -154,17 +156,17 @@ async function runLowResAI() {
     const surface = document.getElementById("currentSurface");
     document.getElementById("confidenceValue").innerText = (top.probability * 100).toFixed(0) + "%";
 
-    if (top.probability > 0.97 && top.className.toLowerCase().includes("pothole")) {
+    if (top.probability > 0.96 && top.className.toLowerCase().includes("pothole")) {
         detectionCounter++;
         if (detectionCounter >= 2) { 
-            surface.innerText = "POTHOLE DETECTED!";
+            surface.innerText = "POTHOLE!";
             surface.style.color = "#ff4b2b";
             markPotholeOnMap();
             detectionCounter = 0;
         }
     } else {
         detectionCounter = 0;
-        surface.innerText = "ROAD CLEAR";
+        surface.innerText = "CLEAR";
         surface.style.color = "#00ff88";
     }
 }
@@ -173,21 +175,11 @@ function markPotholeOnMap() {
     navigator.geolocation.getCurrentPosition(pos => {
         const loc = [pos.coords.latitude, pos.coords.longitude];
         const isDup = potholeDatabase.some(p => map.distance(p, loc) < 15);
-
         if (!isDup) {
             if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-
             potholeDatabase.push(loc);
             localStorage.setItem('pothole_db', JSON.stringify(potholeDatabase));
-
-            L.circleMarker(loc, { 
-                radius: 12, 
-                color: '#ff0000', 
-                fillColor: '#ff4b2b', 
-                fillOpacity: 0.9 
-            }).addTo(potholeLayer);
-            
-            document.getElementById("potholeHits").innerText = potholeDatabase.length;
+            L.circleMarker(loc, { radius: 10, color: 'red', fillOpacity: 0.8 }).addTo(potholeLayer);
             updateAnalytics();
         }
     }, null, { enableHighAccuracy: true });
@@ -198,21 +190,15 @@ function updateAnalytics() {
     const risk = Math.min(hits * 10, 100);
     const accident = Math.min(hits * 15, 100);
 
-    const riskEl = document.getElementById("riskScore");
-    const accEl = document.getElementById("accidentScore");
-    const rBar = document.getElementById("riskBar");
-    const aBar = document.getElementById("accidentBar");
-
-    if(riskEl) riskEl.innerText = risk + "%";
-    if(accEl) accEl.innerText = accident + "%";
-    if(rBar) rBar.style.width = risk + "%";
-    if(aBar) aBar.style.width = accident + "%";
-    
     document.getElementById("potholeHits").innerText = hits;
+    document.getElementById("riskScore").innerText = risk + "%";
+    document.getElementById("accidentScore").innerText = accident + "%";
+    document.getElementById("riskBar").style.width = risk + "%";
+    document.getElementById("accidentBar").style.width = accident + "%";
 }
 
 function clearDatabase() {
-    if (confirm("Wipe all detected pothole data?")) {
+    if (confirm("Reset pothole history?")) {
         localStorage.removeItem('pothole_db');
         location.reload();
     }
