@@ -1,0 +1,156 @@
+:root {
+    --cyber-blue: #00f2ff;
+    --warning-red: #ff4b2b;
+    --safe-green: #00ff88;
+    --glass: rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.15);
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at top right, #0a1f44, #020811);
+    background-attachment: fixed;
+    color: white;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.topbar {
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+}
+
+.logo span { color: var(--cyber-blue); text-shadow: 0 0 10px var(--cyber-blue); font-weight: bold; }
+.status-indicator { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.dot { width: 10px; height: 10px; background: #444; border-radius: 50%; box-shadow: 0 0 5px #000; }
+
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    height: calc(100vh - 60px);
+    gap: 15px;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+#map { border-radius: 20px; border: 1px solid var(--border); z-index: 1; }
+
+.sidebar { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 5px; }
+
+.glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 15px;
+    position: relative;
+}
+
+h3 { margin: 0 0 10px 0; font-size: 0.7rem; text-transform: uppercase; color: var(--cyber-blue); letter-spacing: 1.5px; }
+
+input {
+    width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    padding: 12px; color: white; border-radius: 8px; box-sizing: border-box; margin-bottom: 8px;
+}
+
+.search-container {
+    position: relative;
+}
+
+.btn-primary, .btn-secondary, .btn-action, .btn-monitor {
+    border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.75rem; transition: 0.2s;
+}
+
+.btn-primary { background: var(--cyber-blue); color: #000; }
+.btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border); }
+.btn-action { background: transparent; border: 1px solid var(--cyber-blue); color: var(--cyber-blue); }
+.btn-monitor { background: var(--warning-red); color: white; box-shadow: 0 0 15px rgba(255,75,43,0.3); }
+
+.video-container {
+    position: relative; border-radius: 10px; overflow: hidden; background: #000; height: 150px; border: 1px solid var(--border);
+}
+
+#camera { width: 100%; height: 100%; object-fit: cover; transform: scaleX(1); }
+
+.scanner-line {
+    position: absolute; width: 100%; height: 2px; background: var(--cyber-blue);
+    box-shadow: 0 0 15px var(--cyber-blue); z-index: 5; animation: scan 2s linear infinite;
+}
+
+@keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+.status-row, .metric { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
+.status-value, .neon-text { font-weight: bold; color: var(--cyber-blue); }
+
+.progress { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+#riskBar, #accidentBar { height: 100%; width: 0%; transition: 0.5s; }
+#riskBar { background: var(--cyber-blue); }
+#accidentBar { background: var(--warning-red); }
+
+.suggestions-box {
+    background: #0d1626; border: 1px solid var(--cyber-blue); border-radius: 8px;
+    max-height: 150px; overflow-y: auto; position: absolute; width: calc(100% - 30px); z-index: 100; display: none;
+}
+
+.suggestion-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #e7f6ff;
+    transition: background 0.15s ease;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background: rgba(0, 242, 255, 0.12);
+}
+
+.current-location-option {
+    color: var(--cyber-blue);
+    font-weight: 700;
+}
+
+.analytics {
+    padding-bottom: 18px;
+}
+
+.analytics .btn-action {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px 14px;
+    box-sizing: border-box;
+    font-size: 0.78rem;
+    opacity: 1;
+}
+
+@media (max-width: 800px) {
+    body { overflow-y: auto; height: auto; }
+    .layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+    }
+    #map { height: 400px; width: 100%; order: 2; }
+    .sidebar {
+        order: 1;
+        overflow-y: visible;
+        padding-bottom: 20px;
+    }
+    .topbar { padding: 0 15px; }
+    .glass-card {
+        padding: 16px;
+    }
+}
